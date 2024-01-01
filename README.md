@@ -2,7 +2,7 @@
 
 ### K(ind of s)LOW
 
-Text predction written in clojure
+Text prediction written in clojure
 
 ### Info
 
