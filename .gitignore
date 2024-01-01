@@ -1,0 +1,5 @@
+*
+!.gitignore
+!main.clj
+!deps.edn
+!README.md
