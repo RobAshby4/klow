@@ -42,8 +42,7 @@
   (apply str (interpose " "
     (filter
       #(not (str/includes? % token))
-      (str/split tweet #" ")
-  ))))
+      (str/split tweet #" ")))))
 
 (defn remove-links [tweets] 
   (map #(remove-token-mention % "http") tweets))
@@ -74,8 +73,7 @@
   (-> tweet-file
     (get-tweets-from-file)
     (filter-data)
-    (print-tweets)
-  ))
+    (print-tweets)))
 
 (defn main []
   (doseq [arg *command-line-args*]
