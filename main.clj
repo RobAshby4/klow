@@ -62,6 +62,9 @@
     (get "tweets")
     (get-tweets)))
 
+(defn add-tokens-to-tweets [tweets]
+  (map #(str "<s> " % " </s>") tweets))
+
 (defn filter-data [tweets]
   (-> tweets
     (remove-retweets)
@@ -73,11 +76,22 @@
   (-> tweet-file
     (get-tweets-from-file)
     (filter-data)
-    (print-tweets)))
+    (add-tokens-to-tweets)))
+
+(defn build-ngrams [dataset] dataset) ;; TODO: build viable n-grams from data
+
+(defn twt-main [] 
+  (println "Training using twitter data")
+  (parse-twitter-json)
+  )
 
 (defn main []
-  (doseq [arg *command-line-args*]
-  (println (str "Read an argument: " arg))))
+    (println "which to parse? (twt txt)")
+    (flush)
+    (let [userin (read-line)]
+    (cond 
+        (= userin "txt") (println (open-file input-filename))
+        (= userin "twt") (print-tweets (parse-twitter-json))
+        :else (println "not supported"))))
 
-;; (main)
-(parse-twitter-json)
+(twt-main)
