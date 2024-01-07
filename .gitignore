@@ -1,5 +1,7 @@
 *
 !.gitignore
-!main.clj
+!src/klow.clj
+!src/test.txt
+!src/
 !deps.edn
 !README.md

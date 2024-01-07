@@ -1,0 +1,11 @@
+<s> </s>
+<s> one </s>
+<s> one two </s>
+<s> one two three </s>
+<s> one two three four </s>
+<s> one two three four five </s>
+<s> one two three four five six </s>
+<s> one two three four five six seven </s>
+<s> one two three four five six seven eight </s>
+<s> one two three four five six seven eight nine </s>
+<s> one two three four five six seven eight nine zero </s>
