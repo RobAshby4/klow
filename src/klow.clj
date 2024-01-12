@@ -1,21 +1,32 @@
 (ns klow
   (:require [clojure.string :as str])
-  (:require [clojure.data.json :as json]))
+  (:require [clojure.tools.cli :refer [parse-opts cli]])
+  (:require [clojure.java.io :as io])
+  (:require [clojure.data.json :as json])
+  (:gen-class)
+  )
 
-;; (def input-filename "./shakespeare.txt")
-(def input-filename "./src/test.txt")
-(def tweet-file "./src/tweets.js")
-(def max-ngrams 5)
+(def max-ngrams 8)
 
-(defn open-file [filename]
-  (slurp filename))
+(def cli-options 
+  [ 
+    ["-t" "--type TYPE" "Type of data input"
+      :default "txt"
+      :validate 
+        [ #(case % 
+             "txt" true 
+             "twitter" true
+             false)
+         "Must be either txt or twitter"]]
 
-(defn get-sample-size []
-  (-> input-filename
-    (open-file)
-    (str/split #"\n")
-    (count)
-    (println)))
+    ["-i" "--input FILEPATH" "Input file for the algo"
+      :default ""
+      :validate
+        [ #(.exists (io/as-file %)) "File not found"]]
+
+    ["-h" "--help"]
+  ])
+
 
 (defn separate-full-text [tweet]
   (-> tweet
@@ -73,8 +84,8 @@
     (remove-mentions)
     (remove-empty)))
 
-(defn parse-twitter-json []
-  (-> tweet-file
+(defn parse-twitter-json [filepath]
+  (-> filepath 
     (get-tweets-from-file)
     (filter-data)
     (add-tokens-to-tweets)))
@@ -87,8 +98,7 @@
       (apply conj 
              [(subvec subset start-pos (+ start-pos num-grams))]
              (extract-ngrams subset (inc num-grams) start-pos))
-      nil 
-  ))
+      nil))
 
 (defn get-ngrams [subset]
   ;; sick oneliner
@@ -112,44 +122,34 @@
   (let [next-gram 
       (nth 
         (shuffle possible-grams)
-        (int (rand (- (count possible-grams) 1))))]
-    (println next-gram)
+        (rand-int (count possible-grams)))]
     next-gram
   ))
 
-; TODO: Rewrite this. it doesnt work. its bad. it needs to go.
-; (defn generate-output [ngrams current] 
-;   (println (last current))
-;   (if (empty? current) [] (
-;     (let [possible-grams (get-possible ngrams current)]
-;       (if (= (count possible-grams) 0)
-;         (generate-output ngrams (rest current))
-;         (let [next-gram (select-next possible-grams)]
-;           (if (= (last next-gram) "</s>")
-;             "</s>"
-;             (conj 
-;               (last [current])
-;               (generate-output ngrams next-gram)))))))))
+(defn generate-output [ngrams current] 
+  (if (= (last current) "</s>")
+    (println "</s> \n end.")
+    (let [possible-grams (get-possible ngrams current)]
+      (if (zero? (count possible-grams))
+        (generate-output ngrams (rest current))
+        (let [next-gram (select-next possible-grams)]
+          (print (str (last current) " "))
+          (generate-output ngrams next-gram)
+          )))))
 
-(defn twt-main [] 
-  (println "Training using twitter data")
-  (->
-    (parse-twitter-json)
+(defn fetch-data [datatype filepath] 
+  (case datatype
+    :twt (parse-twitter-json filepath)
+    :txt (str/split (slurp filepath) #"\n")))
+
+(defn generator [dataset] 
+  (-> dataset
     (build-ngrams)
-    ;; (generate-output ["<s>"])
-    ;; now we have all n-grams
-    ;; build up to max-ngram, decrement n if no match until </s>
-    (print-tweets)
+    (generate-output ["<s>"])
   ))
 
-(defn tmp-main []
-    (println "which to parse? (twt txt)")
-    (flush)
-    (let [userin (read-line)]
-    (cond 
-        (= userin "txt") (println (open-file input-filename))
-        (= userin "twt") (print-tweets (parse-twitter-json))
-        :else (println "not supported"))))
-
 (defn main [opts]
-  (twt-main))
+  (let [opt-map-options (parse-opts opts cli-options)]
+     (println opt-map-options)
+    )
+  )
