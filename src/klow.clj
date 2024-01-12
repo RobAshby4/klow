@@ -1,7 +1,6 @@
 (ns klow
   (:require [clojure.string :as str])
-  (:require [clojure.data.json :as json])
-  (:require [clojure.math.combinatorics :as combo]))
+  (:require [clojure.data.json :as json]))
 
 ;; (def input-filename "./shakespeare.txt")
 (def input-filename "./src/test.txt")
@@ -12,11 +11,11 @@
   (slurp filename))
 
 (defn get-sample-size []
-(-> input-filename
-  (open-file)
-  (str/split #"\n")
-  (count)
-  (println)))
+  (-> input-filename
+    (open-file)
+    (str/split #"\n")
+    (count)
+    (println)))
 
 (defn separate-full-text [tweet]
   (-> tweet
@@ -80,33 +79,66 @@
     (filter-data)
     (add-tokens-to-tweets)))
 
-;; dont ask me what happened here, it took a second to figure it out myself
+(defn extract-ngrams [subset num-grams start-pos] 
+  ;; recursively extract n-sized grams from 0..max-ngrams in len
+    (if (and 
+          (<= (+ start-pos num-grams) (count subset)) 
+          (< num-grams max-ngrams)) 
+      (apply conj 
+             [(subvec subset start-pos (+ start-pos num-grams))]
+             (extract-ngrams subset (inc num-grams) start-pos))
+      nil 
+  ))
+
 (defn get-ngrams [subset]
-  (if (seq subset)
-    (reduce into [] 
-      [
-        (filterv 
-          #(and 
-             (< (count %) max-ngrams) 
-             (> (count %) 0)) 
-          (reductions conj [] subset))
-        (get-ngrams (rest subset))
-      ])
-    nil))
+  ;; sick oneliner
+  (dedupe (map #(extract-ngrams subset 0 %) (range 0 (count subset))))
+)
 
 (defn build-ngrams [dataset] 
   (->> dataset
-    (map #(str/split % #" "))
-    (map #(get-ngrams %))
+    (mapv #(str/split % #" "))
+    ;; breaks each set of grams into n-gram from n = 0..max-ngrams 
+    (mapv #(get-ngrams %))
     (apply concat)
+    (mapv #(rest %))
+    (reduce into [])
     ))
+
+(defn get-possible [ngrams current]
+  (filterv #(= (butlast %) current) ngrams))
+
+(defn select-next [possible-grams]
+  (let [next-gram 
+      (nth 
+        (shuffle possible-grams)
+        (int (rand (- (count possible-grams) 1))))]
+    (println next-gram)
+    next-gram
+  ))
+
+; TODO: Rewrite this. it doesnt work. its bad. it needs to go.
+; (defn generate-output [ngrams current] 
+;   (println (last current))
+;   (if (empty? current) [] (
+;     (let [possible-grams (get-possible ngrams current)]
+;       (if (= (count possible-grams) 0)
+;         (generate-output ngrams (rest current))
+;         (let [next-gram (select-next possible-grams)]
+;           (if (= (last next-gram) "</s>")
+;             "</s>"
+;             (conj 
+;               (last [current])
+;               (generate-output ngrams next-gram)))))))))
 
 (defn twt-main [] 
   (println "Training using twitter data")
   (->
     (parse-twitter-json)
-    ;; (str/split (open-file input-filename) #"\n")
     (build-ngrams)
+    ;; (generate-output ["<s>"])
+    ;; now we have all n-grams
+    ;; build up to max-ngram, decrement n if no match until </s>
     (print-tweets)
   ))
 
