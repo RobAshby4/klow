@@ -1,32 +1,10 @@
 (ns klow
   (:require [clojure.string :as str])
-  (:require [clojure.tools.cli :refer [parse-opts cli]])
-  (:require [clojure.java.io :as io])
   (:require [clojure.data.json :as json])
   (:gen-class)
   )
 
 (def max-ngrams 8)
-
-(def cli-options 
-  [ 
-    ["-t" "--type TYPE" "Type of data input"
-      :default "txt"
-      :validate 
-        [ #(case % 
-             "txt" true 
-             "twitter" true
-             false)
-         "Must be either txt or twitter"]]
-
-    ["-i" "--input FILEPATH" "Input file for the algo"
-      :default ""
-      :validate
-        [ #(.exists (io/as-file %)) "File not found"]]
-
-    ["-h" "--help"]
-  ])
-
 
 (defn separate-full-text [tweet]
   (-> tweet
@@ -36,7 +14,7 @@
 (defn get-tweets [tweets]
   (map separate-full-text tweets))
 
-(defn print-tweets [tweets]
+#_(defn print-tweets [tweets]
   (doseq [tweet tweets]
   (println tweet)))
 
@@ -140,7 +118,10 @@
 (defn fetch-data [datatype filepath] 
   (case datatype
     :twt (parse-twitter-json filepath)
-    :txt (str/split (slurp filepath) #"\n")))
+    :txt (str/split (slurp filepath) #"\n")
+    (do
+      (println "Invalid datatype given")
+      (System/exit 0))))
 
 (defn generator [dataset] 
   (-> dataset
@@ -149,7 +130,12 @@
   ))
 
 (defn main [opts]
-  (let [opt-map-options (parse-opts opts cli-options)]
-     (println opt-map-options)
-    )
+  (let [datatype (keyword (get opts '-t))
+        filepath (str (get opts '-i))]
+    (if-not (or (nil? datatype) (nil? filepath))
+      (->
+        (fetch-data datatype filepath)
+        (generator))
+      (println "improper opts.\nUsage: clj -X klow/main -t <twt|txt> -i <filepath>")
+      ))
   )
