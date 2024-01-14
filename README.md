@@ -34,7 +34,7 @@ the original tweets.js to look like the following
     }
   }
   ...
-}
+]}
 ```
 
 ### Info
